@@ -1,0 +1,168 @@
+﻿/* Base Elements */
+body {
+    font-size: 16px;
+    font-family: Arial;
+}
+
+ul {
+    display: block;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    vertical-align: middle;
+}
+
+ul li {
+    display: inline-block;
+    margin-left: 2em;
+}
+
+ul li:first-child {
+    margin-left: 0;
+}
+
+input[type=button] {
+    color: initial !important;
+}
+
+input[type=button]:disabled {
+    color: #999 !important;
+    background-color: #DDD;
+}
+
+label {
+    font-weight: bolder;
+}
+
+/* Core Styles */
+#top-nav {
+    width: 100%;
+    height: 2em;
+    border-bottom: 1px solid black;
+    margin: 0;
+    padding: 0;
+}
+
+.page-container {
+    padding: 1.25em;
+}
+
+.expander-container {
+    border: 1px solid black;
+    padding: 0.25em;
+    margin-bottom: 0.25em;
+}
+
+.expander-title {
+    cursor: pointer;
+}
+
+.expander-title:hover {
+    background-color: rgba(128, 128, 128, 0.25);
+}
+
+.expander-content {
+    display: none;
+}
+
+.slider-selection {
+	background: green;
+}
+
+.slider-track-high {
+	background: blue;
+}
+
+.left {
+    float: left;
+}
+
+.right {
+    float: right;
+}
+
+.clear {
+    clear: both;
+}
+
+.strong {
+    font-weight: bolder;
+}
+
+.resort-status {
+    margin-bottom: 1em;
+}
+
+.customer-status {
+    border: 1px solid black;
+    padding: 0.5em;
+}
+
+.info-table tbody tr td {
+    padding: 0.25em;
+}
+
+.info-table tbody tr td:first-child {
+    text-align: right;
+    font-weight: bolder;
+}
+
+.info-table tbody tr td:last-child {
+    text-align: left;
+}
+
+
+/* Symbol Styles */
+.small-square {
+    display: inline-block;
+    width: 0.75em;
+    height: 0.75em;
+    border: 1px solid black;
+}
+
+.green {
+    background-color: green;
+}
+
+.red {
+    background-color: red;
+}
+
+
+/* Drugs */
+.drug-panel {
+    margin-top: 1em;
+    padding: 1em;
+    /*background-color: rgb(212, 212, 212);
+    border: 1px solid black;*/
+}
+
+.drug-item {
+    border: 1px solid black;
+    background-color: rgb(212, 212, 212);
+    border-radius: 1em 1em;
+}
+
+.drug-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.drug-container {
+    padding: 0.75em;
+}
+
+.drug-name {
+    font-weight: bold;
+    text-decoration: underline;
+    font-size: 1.2em;
+}
+
+.drug-statistic {
+    font-weight: bold;
+}
+
+.drug-description {
+    margin-left: 1em;
+}

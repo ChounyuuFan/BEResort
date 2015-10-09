@@ -1,0 +1,268 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/bootstrap-slider.css" rel="stylesheet">
+
+    <!-- Libraries -->
+    <script type="text/javascript" src="js/lib/jquery.js"></script>
+    <script type="text/javascript" src="js/lib/ko.js"></script>
+    <script type="text/javascript" src="js/lib/common.js"></script>
+
+    <!-- Game Files -->
+    <script type="text/javascript" src="js/game.js"></script>
+    <script type="text/javascript" src="js/view.js"></script>
+
+    <link type="text/css" rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+    <div class="page-container">
+        <ul class="resort-status" data-bind="with: $data.game">
+            <li>
+                <input type="button" value="Pass Time" data-bind="click: function() { $root.tick(); }" />
+            </li>
+            <li>
+                <label>Time:</label>
+                <span data-bind="text: $data.getCurrentTimeFormatted()"></span>
+            </li>
+            <li>
+                <label>Day:</label>
+                <span data-bind="text: $data.currentDay"></span>
+            </li>
+            <li>
+                <label>Cash:</label>
+                <span data-bind="text: '$' + money().toFixed(2) "></span>
+            </li>
+            <li>
+                <label>Chem:</label>
+                <span data-bind="text: $data.chem().toFixed(2) + 'ml'"></span>
+            </li>
+            <li>
+                <label>Upkeep:</label>
+                <span data-bind="text: '$' + $data.resort.totalUpkeep()"></span>
+            </li>
+        </ul>
+        <ul class="resort-status">
+            <li>
+                <input type="button" value="Customers" data-bind="click: function() { $data.showCustomersTab(); }" />
+            </li>
+            <li>
+                <input type="button" value="Resort & Upgrades" data-bind="click: function() { $data.showUpgradesTab(); }" />
+            </li>
+            <li>
+                <input type="button" value="Contracts" data-bind="click: function() { $data.showContractsTab(); }" />
+            </li>
+        </ul>
+        <div id="current-tab-view" data-bind="template: $data.currentTabTemplate">
+
+        </div>
+    </div>
+
+    <script type="text/html" id="customers-tab">
+        <div class="customers-list">
+            <!-- ko foreach: $data.game.customers -->
+            <div class="customer-status" data-bind="attr: { id: 'customer-' + $index() }">
+                <div class="left">
+                    <span>Customer Name</span>
+                    <table class="info-table">
+                        <tbody>
+                            <tr>
+                                <td>Milk:</td>
+                                <td data-bind="text: tankAmount().toFixed(1) + 'ml / ' + tankSize().toFixed(0) + 'ml (' + tankMax().toFixed(1) + 'ml)'"></td>
+                            </tr>
+                            <tr>
+                                <td>Milk Rate:</td>
+                                <td data-bind="text: fillRate().toFixed(1) + 'ml / ' + maxFillRate().toFixed(1) + 'ml'"></td>
+                            </tr>
+                            <tr>
+                                <td>Happiness:</td>
+                                <td data-bind="text: happiness().toFixed(1) + ' / ' + maxHappiness().toFixed(1)"></td>
+                            </tr>
+                            <tr>
+                                <td>Tolerance:</td>
+                                <td data-bind="text: tolerance().toFixed(1) + ' / ' + maxTolerance().toFixed(1)"></td>
+                            </tr>
+                            <tr>
+                                <td>Measurements:</td>
+                                <td data-bind="text: getBraSize() + ' ' + measurements.waist() + ' ' + measurements.hips()"></td>
+                            </tr>
+                            <tr>
+                                <td>Message:</td>
+                                <!-- ko if: $data.currentTickMessage() -->
+                                <td data-bind="text: '&quot;' + $data.currentTickMessage().message + '&quot;'"></td>
+                                <!-- /ko -->
+                                <!-- ko if: !$data.currentTickMessage() -->
+                                <td></td>
+                                <!-- /ko -->
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="right" style="text-align: right;">
+                    <!-- ko if: !$data.activeMilker() -->
+                    <input type="button" value="Attach Milker" data-bind="click: function() { $data.attachMilker(); $root.refreshView(); }" />
+                    <!-- /ko -->
+                    <!-- ko if: $data.activeMilker() -->
+                    <div style="display: inline-block; margin-right: 0.5em;" data-bind="with: $data.activeMilker()">
+                        <div class="strong" style="display: inline-block; margin-right: 0.5em;">Milk Rate:</div>
+                        <div class="slider" style="height: 1em; width: 8em;" data-bind="slider: { min: $data.minMilkRate(), max: $data.maxMilkRate(), value: $data.milkRate(), bindObject: { tooltip: 'always' }, update: function(slideEvent) { if(slideEvent) $data.setMilkRate(slideEvent.value); } }"></div>
+                    </div>
+                    <input type="button" value="Detach Milker" data-bind="click: function() { $data.detachMilker(); $root.refreshView(); }" />
+                    <!-- /ko -->
+                </div>
+                <div class="clear"></div>
+
+                <input type="button" class="right" value="Drugs" data-bind="click: function() { $('#customer-' + $index() + ' .drug-panel').slideToggle(); }" />
+                <div class="clear"></div>
+
+                <div class="drug-panel" style="display: none;">
+                    <div class="drug-list">
+                        <!-- ko foreach: Drugs.drugList -->
+                        <div class="drug-item">
+                            <div class="drug-container">
+                                <div class="left">
+                                    <div class="drug-name" data-bind="text: $data.effect.name"></div>
+                                    <table class="info-table">
+                                        <tbody>
+                                            <tr>
+                                                <td>Cost:</td>
+                                                <td data-bind="text: '$' + $data.effect.costMoney()"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Chem:</td>
+                                                <td data-bind="text: $data.effect.costChem() + 'ml'"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Tolerance:</td>
+                                                <td data-bind="text: $data.effect.costTolerance()"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Duration:</td>
+                                                <td data-bind="text: $data.effect.ticksPerDose() + ' hours'"></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="right" style="text-align: right;">
+                                    <div>
+                                        <!-- ko if: $root.canBuyDrug($parent, $data.effect) -->
+                                        <input type="button" value="Administer" data-bind="click: function() { Drugs.buyDrug($parent, $data.function); }" />
+                                        <!-- /ko -->
+                                        <!-- ko if: !$root.canBuyDrug($parent, $data.effect) -->
+                                        <input type="button" value="Administer" disabled="disabled" />
+                                        <!-- /ko -->
+                                    </div>
+                                    <table class="info-table">
+                                        <!-- ko with: $parent.getDrugByName($data.effect.name) -->
+                                        <!-- ko if: $data -->
+                                        <tbody>
+                                            <tr>
+                                                <td>Remaining Ticks:</td>
+                                                <td data-bind="text: $data.durationTicks()">0</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Effective Power:</td>
+                                                <td data-bind="text: (($data.durationTicks() / $data.ticksPerDose()) * 100).toFixed(1)">0</td>
+                                            </tr>
+                                        </tbody>
+                                        <!-- /ko -->
+                                        <!-- /ko -->
+                                    </table>
+                                </div>
+                                <div class="clear"></div>
+                                <span class="drug-description" data-bind="text: $data.effect.description"></span>
+                            </div>
+                        </div>
+                        <!-- /ko -->
+                    </div>
+                </div>
+            </div>
+            <!-- /ko -->
+        </div>
+    </script>
+
+    <script type="text/html" id="upgrades-tab">
+        <div class="upgrades-page-tab-container">
+            <!-- ko with: Game.resort.totalAmenitiesValue -->
+            <table class="info-table" style="margin-bottom: 2em;">
+                <thead>
+                    <tr>
+                        <th style="text-decoration: underline;" colspan="2">Resort Ratings</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Relaxation:</td>
+                        <td data-bind="text: $data.relax"></td>
+                    </tr>
+                    <tr>
+                        <td>Athletic:</td>
+                        <td data-bind="text: $data.athletic"></td>
+                    </tr>
+                    <tr>
+                        <td>Pamper:</td>
+                        <td data-bind="text: $data.pamper"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <!-- /ko -->
+
+            <!-- ko foreach: Game.resort.upgrades -->
+            <div class="expander-container">
+                <div class="expander-title">
+                    <div class="left" data-bind="click: function(i, e) { $(e.target).parents('.expander-title').siblings('.expander-content').toggle(); }">
+                        <ul>
+                            <li style="width: 12em; font-weight: bold;" data-bind="text: $data.name"></li>                            
+                        </ul>
+                    </div>
+                    <div class="right">
+                        <ul>
+                            <li data-bind="text: 'Upkeep: $'  + $data.upkeep()"></li>
+                            <!-- ko if: $data.purchased() -->
+                            <li><div style="margin-left: 0.5em;" class="small-square" data-bind="css: { green: $data.enabled(), red: !$data.enabled() }"></div></li>
+                            <li><input style="width: 5em;" type="button" value="Buy" data-bind="attr: { value: $data.enabled() ? 'Disable' : 'Enable' }, click: function() { $data.enabled(!$data.enabled()); }" /></li>
+                            <!-- /ko -->
+                            <!-- ko if: !$data.purchased() -->
+                            <li style="width: 6em;" data-bind="text: '$' + $data.price()"></li>
+                            <li><input type="button" value="Buy" data-bind="attr: { disabled: $root.canBuyUpgrade($data) ? null : 'disabled' }, click: function() { if(!$root.canBuyUpgrade($data)) { return; } $data.buy(); }" /></li>
+                            <!-- /ko -->
+                        </ul>
+                    </div>
+                    <div class="clear"></div>
+                </div>
+                <div class="expander-content">
+                    <div class="upgrade-description" data-bind="text: $data.description">
+                    </div>
+                </div>
+            </div>
+            <!-- /ko -->
+        </div>
+    </script>
+
+    <script type="text/html" id="contracts-tab">
+        CONTRACTS
+    </script>
+
+    <script src="js/lib/bootstrap.min.js"></script>
+    <script src="js/lib/bootstrap-slider.js"></script>
+    <script type="text/javascript">
+        var view = new GameView();
+
+        ko.bindingHandlers.slider = {
+            init: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
+                var bindValue = valueAccessor();
+                $(element).attr("data-slider-min", bindValue.min)
+                          .attr("data-slider-max", bindValue.max)
+                          .attr("data-slider-value", bindValue.value)
+                          .on("slide", bindValue.update)
+                          .slider(bindValue.bindObject);
+            }
+        };
+
+        ko.applyBindings(view.observable, $(".page-container")[0]);
+    </script>
+</body>
+</html>
