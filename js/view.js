@@ -9,7 +9,7 @@ function GameView() {
     this.observable = ko.observable(this);
     this.game = Game;
     this.currentTabTemplate = ko.observable();
-    this.setCurrentTab("contracts-tab");
+    this.setCurrentTab("customers-tab");
 }
 
 // Can Purchase Logic

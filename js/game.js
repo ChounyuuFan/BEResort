@@ -261,6 +261,8 @@ var Game = (function () {
         this.worldInfo = new WorldInfo();
         this.resort = new Resort();
         this.availableContracts(Contracts.createNewContracts(this.settings.contractLimit));
+
+        this.availableContracts()[0].acceptContract();
     };
 
     Game.prototype.getMinutesFromTicks = function (ticks) {
@@ -512,10 +514,11 @@ function Customer() {
         }
     };
     Customer.prototype._tickTankSizeGain = function () {
-        if (this.tankAmount() < this.tankSize())
+        var tankGainBoundry = this.tankSize() * 0.8;
+        if (this.tankAmount() < tankGainBoundry)
             return;
 
-        var overlimitAmount = this.tankAmount() - this.tankSize();
+        var overlimitAmount = this.tankAmount() - tankGainBoundry;
         this.modExpandedTankSize(overlimitAmount * 0.02);
     };
     Customer.prototype._tickTankFillEnd = function () {

@@ -82,7 +82,7 @@
         </div>
     </div>
 
-    <script type="text/html" id="customers-tab">
+    <script type="text/html" id="customers-tab">        
         <div style="font-weight: bold; position: relative; top: -2.5em;">
             <span data-bind="text: 'Customers: ' + Game.customers().length + ' / ' + Game.settings.customerLimit"></span>
         </div>
@@ -95,19 +95,27 @@
                         <tbody>
                             <tr>
                                 <td>Milk:</td>
-                                <td data-bind="text: tankAmount().toFixed(1) + 'ml / ' + tankSize().toFixed(0) + 'ml (' + tankMax().toFixed(1) + 'ml)'"></td>
+                                <td>
+                                    <!-- ko template: { name: "control-progress-bar", data: { width: "16em", value: tankAmount(), maxValue: tankSize(), text: tankAmount().toFixed(1) + 'ml / ' + tankSize().toFixed(0) + 'ml (' + tankMax().toFixed(1) + 'ml)' } }--><!-- /ko -->
+                                </td>
                             </tr>
                             <tr>
                                 <td>Milk Rate:</td>
-                                <td data-bind="text: fillRate().toFixed(1) + 'ml / ' + maxFillRate().toFixed(1) + 'ml'"></td>
+                                <td>
+                                    <!-- ko template: { name: "control-progress-bar", data: { width: "16em", value: fillRate(), maxValue: maxFillRate(), text: fillRate().toFixed(1) + 'ml / ' + maxFillRate().toFixed(1) + 'ml' } }--><!-- /ko -->
+                                </td>
                             </tr>
                             <tr>
                                 <td>Happiness:</td>
-                                <td data-bind="text: happiness().toFixed(1) + ' / ' + maxHappiness().toFixed(1)"></td>
+                                <td>
+                                    <!-- ko template: { name: "control-progress-bar", data: { width: "16em", value: happiness(), maxValue: maxHappiness(), text: happiness().toFixed(1) + ' / ' + maxHappiness().toFixed(1) } }--><!-- /ko -->
+                                </td>
                             </tr>
                             <tr>
                                 <td>Tolerance:</td>
-                                <td data-bind="text: tolerance().toFixed(1) + ' / ' + maxTolerance().toFixed(1)"></td>
+                                <td>
+                                    <!-- ko template: { name: "control-progress-bar", data: { width: "16em", value: tolerance(), maxValue: maxTolerance(), text: tolerance().toFixed(1) + ' / ' + maxTolerance().toFixed(1) } }--><!-- /ko -->
+                                </td>
                             </tr>
                             <tr>
                                 <td>Measurements:</td>
@@ -347,6 +355,21 @@
                     <!-- /ko -->
                 </tbody>
             </table>
+        </div>
+    </script>
+
+    <script id="control-progress-bar" type="text/html">
+        <div style="position: relative;">
+            <div style="text-align: center; width: 16em; color: black; text-shadow: 1px 1px 1px #FFF; font-weight: bold;" data-bind="style: { width: $data.width }">
+                <div>
+                    <span style="font-size: 0.8em;" data-bind="text: $data.text"></span>
+                </div>
+            </div>
+            <div class="progress" style="background-color: #CCC; border: 1px solid black; width: 16em; position: absolute; top: 0.15em; z-index: -1;">
+                <div data-bind="attr: { 'aria-valuenow': $data.value, 'aria-valuemax': $data.maxValue }, style: { width: ($data.value / $data.maxValue * 100).toFixed(2) + '%' }" class="progress-bar" role="progressbar"
+                     aria-valuemin="0">
+                </div>
+            </div>
         </div>
     </script>
 
