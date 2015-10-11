@@ -263,10 +263,12 @@ var Game = (function () {
         this.availableContracts(Contracts.createNewContracts(this.settings.contractLimit));
     };
 
-    Game.prototype.getTimeSpanFromTicks = function (ticks) {
+    Game.prototype.getMinutesFromTicks = function (ticks) {
         var minutesPerTick = 24 * 60 / this.settings.daySettings.totalTicksPerDay;
-        var totalMinutes = minutesPerTick * ticks;
-
+        return minutesPerTick * ticks;
+    };
+    Game.prototype.getTimeSpanFromTicks = function (ticks) {
+        var totalMinutes = this.getMinutesFromTicks(ticks);
         var hours = (parseInt(totalMinutes / 60) + this.settings.daySettings.wakeHour) % 24;
         var minutes = totalMinutes % 60;
 
@@ -296,6 +298,16 @@ var Game = (function () {
             minutes = "0" + minutes;
 
         return hours.toFixed(0) + ":" + minutes + " " + amPm;
+    };
+    Game.prototype.getFormattedTimestamp = function (ticks) {
+        var totalMinutes = this.getMinutesFromTicks(ticks)
+        var hours = parseInt(totalMinutes / 60);
+        var minutes = parseInt(totalMinutes % 60);
+        
+        if (minutes < 10)
+            minutes = "0" + minutes.toString();
+
+        return hours + ":" + minutes;
     };
     Game.prototype.getCurrentTimeFormatted = function () {
         return this.getFormattedTimeFromTicks(this.currentTick());

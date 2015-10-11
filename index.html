@@ -58,7 +58,7 @@
         </ul>
         <div style="margin-right: auto; margin-left: auto; width: 50%; height: 20em; border: 1px solid black; overflow-y: scroll; margin-bottom: 1em;">
             <table class="table table-striped table-hover">
-                <thead>
+                <thead style="position: static;">
                     <tr>
                         <th>Date</th>
                         <th>Message</th>
@@ -87,8 +87,8 @@
             <!-- ko foreach: $data.game.customers -->
             <div class="customer-status" data-bind="attr: { id: 'customer-' + $index() }">
                 <div class="left">
-                    <span data-bind="text: $data.name"></span>
-                    <table class="info-table">
+                    <div data-bind="text: $data.name"></div>
+                    <table style="margin-right: 4em;" class="info-table left">
                         <tbody>
                             <tr>
                                 <td>Milk:</td>
@@ -110,17 +110,27 @@
                                 <td>Measurements:</td>
                                 <td data-bind="text: getBraSize() + ' ' + measurements.waist() + ' ' + measurements.hips()"></td>
                             </tr>
+                        </tbody>
+                    </table>
+                    <table class="info-table left">
+                        <tbody>
                             <tr>
-                                <td>Message:</td>
-                                <!-- ko if: $data.currentTickMessage() -->
-                                <td data-bind="text: '&quot;' + $data.currentTickMessage().message + '&quot;'"></td>
+                                <!-- ko if: $data.contract().ticksRemaining -->
+                                <td>Remaining Time:</td>
+                                <td>
+                                    <span data-bind="text: Game.getFormattedTimestamp($data.contract().ticksRemaining())"></span>
+                                </td>
                                 <!-- /ko -->
-                                <!-- ko if: !$data.currentTickMessage() -->
-                                <td></td>
+                                <!-- ko if: $data.contract().totalTargetSize -->
+                                <td>Target Size:</td>
+                                <td>
+                                    <span data-bind="text: $data.contract().totalTargetSize.toFixed(2) + 'ml'"></span>
+                                </td>
                                 <!-- /ko -->
                             </tr>
                         </tbody>
                     </table>
+                    <div class="clear"></div>
                 </div>
                 <div class="right" style="text-align: right;">
                     <!-- ko if: !$data.activeMilker() -->
@@ -135,6 +145,16 @@
                     <!-- /ko -->
                 </div>
                 <div class="clear"></div>
+
+                <div class="left" style="margin-top: 0.5em;">
+                        <label>Message:</label>
+                        <!-- ko if: $data.currentTickMessage() -->
+                        <span data-bind="text: '&quot;' + $data.currentTickMessage().message + '&quot;'"></span>
+                        <!-- /ko -->
+                        <!-- ko if: !$data.currentTickMessage() -->
+                        <span></span>
+                        <!-- /ko -->
+                </div>
 
                 <input type="button" class="right" value="Drugs" data-bind="click: function() { $('#customer-' + $index() + ' .drug-panel').slideToggle(); }" />
                 <div class="clear"></div>

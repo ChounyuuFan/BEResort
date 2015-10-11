@@ -94,8 +94,13 @@ label {
     margin-bottom: 1em;
 }
 
+.customers-list .customer-status:first-child {
+    border: 1px solid black;
+}
+
 .customer-status {
     border: 1px solid black;
+    border-top: none;
     padding: 0.5em;
 }
 
