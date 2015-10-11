@@ -20,7 +20,7 @@
 </head>
 <body>
     <div class="page-container">
-        <ul class="resort-status" data-bind="with: $data.game">
+        <ul class="inline-list resort-status" data-bind="with: $data.game">
             <li>
                 <input type="button" value="Pass Time" data-bind="click: function() { $root.tick(); }" />
             </li>
@@ -45,7 +45,7 @@
                 <span data-bind="text: '$' + $data.totalDailyUpkeep()"></span>
             </li>
         </ul>
-        <ul class="resort-status">
+        <ul class="inline-list resort-status">
             <li>
                 <input type="button" value="Customers" data-bind="click: function() { $data.showCustomersTab(); }" />
             </li>
@@ -56,6 +56,27 @@
                 <input type="button" value="Contracts" data-bind="click: function() { $data.showContractsTab(); }" />
             </li>
         </ul>
+        <div style="margin-right: auto; margin-left: auto; width: 50%; height: 20em; border: 1px solid black; overflow-y: scroll; margin-bottom: 1em;">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- ko foreach: Game.messageLog.log() -->
+                    <tr>
+                        <td style="width: 1%; white-space: nowrap; font-weight: bold;">
+                            <span data-bind="text: 'Day ' + $data.timestamp.day"></span> -
+                            <span data-bind="text: Game.getFormattedTimeFromTicks($data.timestamp.tick)"></span>
+                        </td>
+                        <td data-bind="text: $data.message"></td>
+                    </tr>
+                    <!-- /ko -->
+                </tbody>
+            </table>
+        </div>
         <div id="current-tab-view" data-bind="template: $data.currentTabTemplate">
 
         </div>
@@ -66,7 +87,7 @@
             <!-- ko foreach: $data.game.customers -->
             <div class="customer-status" data-bind="attr: { id: 'customer-' + $index() }">
                 <div class="left">
-                    <span>Customer Name</span>
+                    <span data-bind="text: $data.name"></span>
                     <table class="info-table">
                         <tbody>
                             <tr>
@@ -219,12 +240,12 @@
                 <div class="expander-container">
                     <div class="expander-title">
                         <div class="left" data-bind="click: $root.expanderClick">
-                            <ul>
+                            <ul class="inline-list">
                                 <li style="width: 12em; font-weight: bold;" data-bind="text: $data.name"></li>
                             </ul>
                         </div>
                         <div class="right">
-                            <ul>
+                            <ul class="inline-list">
                                 <li data-bind="text: 'Upkeep: $'  + $data.upkeep()"></li>
                                 <!-- ko if: $data.purchased() -->
                                 <li><div style="margin-left: 0.5em;" class="small-square" data-bind="css: { green: $data.enabled(), red: !$data.enabled() }"></div></li>
@@ -271,7 +292,39 @@
     </script>
 
     <script type="text/html" id="contracts-tab">
-        CONTRACTS
+        <div>
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Customer Name</th>
+                        <th>Measurements</th>
+                        <th>Contract Type</th>
+                        <th>Target</th>
+                        <th>Expected Pay</th>
+                        <th style="width: 1%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- ko foreach: Game.availableContracts() -->
+                    <tr>
+                        <td data-bind="text: $data.customer.name"></td>
+                        <td data-bind="text: $data.customer.getBraSize() + ' ' + $data.customer.measurements.hips() + ' ' + $data.customer.measurements.waist()"></td>
+                        <td data-bind="text: $data.typeName"></td>
+
+                        <!-- ko if: $data.desiredSizeIncrease -->
+                        <td data-bind="text: $data.desiredSizeIncrease.toFixed(0) + 'ml'"></td>
+                        <!-- /ko -->
+                        <!-- ko if: $data.dayCount -->
+                        <td data-bind="text: $data.dayCount + ' days'"></td>
+                        <!-- /ko -->
+
+                        <td data-bind="text: '$' + $data.calculateExpectedPayoff().toFixed(2)"></td>
+                        <td><input type="button" value="Accept" data-bind="click: $root.verifyAcceptContract" /></td>
+                    </tr>
+                    <!-- /ko -->
+                </tbody>
+            </table>
+        </div>
     </script>
 
     <script src="js/lib/bootstrap.min.js"></script>

@@ -7,7 +7,7 @@ function GameView() {
     this.observable = ko.observable(this);
     this.game = Game;
     this.currentTabTemplate = ko.observable();
-    this.setCurrentTab("customers-tab");
+    this.setCurrentTab("contracts-tab");
 }
 
 // Can Purchase Logic
@@ -19,7 +19,6 @@ GameView.prototype.canBuyDrug = function (customer, drug) {
 GameView.prototype.canBuyUpgrade = function (upgrade) {
     return upgrade.price() <= this.game.money();
 };
-
 
 // Navigation
 GameView.prototype.setCurrentTab = function (tabName) {
@@ -58,6 +57,21 @@ GameView.prototype.postRefreshView = function () {
 
 };
 
+GameView.prototype.verifyAcceptContract = function (contract, eventData) {
+    /// <param name="contract" type="Contracts.CustomerContractBase" />
+    if (Game.customers().length >= Game.settings.customerLimit) {
+        alert("You are at the customer limit.  Complete existing customer contracts first.");
+        return;
+    }
+
+    var result = confirm("Are you sure you want to accept this " + contract.typeName + " contract?");
+    if (!result)
+        return;
+
+    contract.acceptContract();
+};
+
+// GUI stuff that really doesn't belong here
 GameView.prototype.expanderClick = function (i, e) {
     $(e.target).parents('.expander-title').siblings('.expander-content').toggle();
 };

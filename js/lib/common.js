@@ -46,7 +46,7 @@ var Debug = {
         var startTime = new Date();
         returnValue = callback();
         var runTime = (new Date()).getMillisecondDifference(startTime);
-        
+
         console.log("Function ran for: " + runTime + " milliseconds");
         return returnValue;
     }
@@ -81,17 +81,12 @@ function WeightedRandomItem(value, weight) {
     this.weight = !!weight ? weight : 1;
 }
 
-function getWeightedRandomItem(items) {
-    
-
-}
-
 var ArrayHelpers = (function () {
     function createDictionaryArray(elements, keyValueFunction) {
         var returnValue = [];
         for (var i = 0; i < elements.length; i++) {
             var key = keyValueFunction(elements[i]);
-            
+
             // Add a property that links to the matching values array
             if (returnValue[key])
                 returnValue[key].push(elements[i])
@@ -105,7 +100,7 @@ var ArrayHelpers = (function () {
                 });
             }
         }
-        
+
         // Sort array by key, destroying the existing key properties
         returnValue = returnValue.sort(function (a, b) {
             if (a.key == b.key)
@@ -121,7 +116,24 @@ var ArrayHelpers = (function () {
         return returnValue;
     }
 
+    function compareProperties(a, b, propertyNames) {
+        for (var i = 0; i < propertyNames.length; i++) {
+            var propName = propertyNames[i];
+
+            if(typeof(a[propName]) == "undefined" || typeof(b[propName]) == "undefined")
+                continue;
+
+            if (a[propName] > b[propName])
+                return 1;
+            else if (a[propName] < b[propName])
+                return -1;
+        }
+
+        return 0;
+    }
+
     return {
+        compareProperties: compareProperties,
         createDictionaryArray: createDictionaryArray
     };
 })();

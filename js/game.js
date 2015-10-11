@@ -9,6 +9,10 @@ function MessageInfo(message, type, priority) {
     this.message = message ? message : "";
     this.type = type ? type : "";
     this.priority = priority ? priority : 0;
+    this.timestamp = {
+        day: Game.currentDay(),
+        tick: Game.currentTick()
+    };
 }
 
 var MessageTypes = {
@@ -27,7 +31,7 @@ var ResortRoomTypes = {
     "All": 63
 };
 
-(function () {    
+(function () {
     function createReverseLookup(objectToPopulate) {
         var valueList = [];
         for (var prop in objectToPopulate) {
@@ -83,7 +87,7 @@ AmenitiesValue.prototype._createRandomValue = function (totalPoints) {
 };
 
 function ResortUpgradeBase(name, price, upkeep, owningRoomType) {
-    this.name = ko.observable(name);    
+    this.name = ko.observable(name);
     this.price = ko.observable(price);
     this.upkeep = ko.observable(upkeep);
     this.description = ko.observable(null);
@@ -99,6 +103,23 @@ ResortUpgradeBase.prototype.buy = function () {
     this.enabled(true);
 };
 
+
+/////////////////
+// Message Log //
+/////////////////
+function MessageLog() {
+    this.logLength = 50;
+    this.log = ko.observableArray([]);
+}
+MessageLog.prototype.add = function (message) {
+    /// <param name="message" type="MessageInfo" />
+    this.log.splice(0, 0, message);
+    while (this.log.length > this.logLength)
+        this.log.splice(50, 1);
+};
+MessageLog.prototype.createAdd = function (messageText) {
+    return this.add(new MessageInfo(messageText));
+};
 
 ///////////////////
 // Game & Resort //
@@ -205,14 +226,15 @@ var Game = (function () {
         /// <field name="worldInfo" type="WorldInfo" />
         /// <field name="resort" type="Resort" />
         /// <field name="availableContracts" type="Array" elementType="Contracts.CustomerContractBase" />
-        
+
         this.settings = {
             daySettings: {
                 totalTicksPerDay: 24,
                 activeTicksPerDay: 16,
                 wakeHour: 8
             },
-            contractLimit: 10
+            contractLimit: 10,
+            customerLimit: 4
         };
 
         this.money = ko.observable(9500);
@@ -220,6 +242,7 @@ var Game = (function () {
         this.currentTick = ko.observable(0);
         this.currentDay = ko.observable(1);
         this.customers = ko.observableArray();
+        this.messageLog = new MessageLog();
 
         // Computed Properties
         this.customerUpkeep = ko.computed(function () {
@@ -228,19 +251,16 @@ var Game = (function () {
         this.totalDailyUpkeep = ko.computed(function () {
             return this.customerUpkeep() + this.resort.totalUpkeep();
         }, this, { deferEvaluation: true });
-        
+
         this.availableContracts = ko.observableArray([]);
         this.worldInfo = null;
         this.resort = null;
     }
-    Game.prototype.initialize = function () {        
-
+    Game.prototype.initialize = function () {
         // Initialize the world, resort, and contracts.  Contracts must be done after the world.
         this.worldInfo = new WorldInfo();
         this.resort = new Resort();
         this.availableContracts(Contracts.createNewContracts(this.settings.contractLimit));
-
-        this.customers.push(new Customer());
     };
 
     Game.prototype.getTimeSpanFromTicks = function (ticks) {
@@ -255,8 +275,8 @@ var Game = (function () {
             minutes: minutes
         };
     };
-    Game.prototype.getCurrentTimeFormatted = function () {
-        var timeSpan = this.getTimeSpanFromTicks(this.currentTick());
+    Game.prototype.getFormattedTimeFromTicks = function (ticks) {
+        var timeSpan = this.getTimeSpanFromTicks(ticks);
 
         var hours = timeSpan.hours;
         var minutes = timeSpan.minutes;
@@ -276,6 +296,9 @@ var Game = (function () {
             minutes = "0" + minutes;
 
         return hours.toFixed(0) + ":" + minutes + " " + amPm;
+    };
+    Game.prototype.getCurrentTimeFormatted = function () {
+        return this.getFormattedTimeFromTicks(this.currentTick());
     };
     Game.prototype.tick = function () {
         if (this.currentTick() >= this.settings.daySettings.activeTicksPerDay) {
@@ -306,8 +329,10 @@ var Game = (function () {
 //////////////
 // Customer //
 //////////////
-function Customer(game) {
-    this.game = game;
+function Customer() {
+    this.firstName = CustomerNameGenerator.pickFirstName();
+    this.lastName = CustomerNameGenerator.pickLastName();
+    this.name = this.firstName + " " + this.lastName;
 
     // Tank Size
     this.baseTankSize = ko.observable(100);
@@ -383,6 +408,7 @@ function Customer(game) {
     this.activeDrugs = ko.observableArray();
     this.amenitiyPreferences = ko.observable(new AmenitiesValue()._createRandomValue(2));
     this.activeMilker = ko.observable(null);
+    this.contract = ko.observable();
 }
 (function () {
     Customer.prototype.messages = {
@@ -451,8 +477,10 @@ function Customer(game) {
         this._tickTankFillEnd();
         this._tickFillRateGain();
 
-        if(isActiveTick)
+        if (isActiveTick)
             this._tickAmenities();
+
+        this.contract().tick();
     };
     Customer.prototype._tickFillRateGain = function () {
         if (this.tankAmount() <= this.tankSize()) {
@@ -632,7 +660,7 @@ function WorldInfo() {
     WorldInfo.prototype.recruitCustomer = function (customer) {
         var popIndex = 0;
         for (; popIndex < this.population().length; popIndex++) {
-            if (this.population()[i] == customer)
+            if (this.population()[popIndex] == customer)
                 break;
         }
 
@@ -686,17 +714,52 @@ function WorldInfo() {
 
 var Contracts = (function () {
     function CustomerContractBase(customer) {
+        /// <param name="customer" type="Customer" />
         this.upfrontPay = 0;
         this.customer = customer;
         this.isComplete = false;
-        this.typeName = "";
     }
     (function () {
+        CustomerContractBase.prototype.typeName = "BaseContract";
+        CustomerContractBase.prototype.happinessBreakEvenPoint = 20;
+        CustomerContractBase.prototype._calculateHappinessBonusRate = function () {
+            var value = this.customer.happiness() - this.happinessBreakEvenPoint;
+            if (value == 0)
+                return 1;
+
+            if (value < 0) {
+                // Scale from 1.0 to 0.5
+                return -value / (this.happinessBreakEvenPoint * 2);
+            }
+
+            // Scale from 1 to 1.5
+            return 1 + (value / (2 * (100 - this.happinessBreakEvenPoint)));
+        };
+        CustomerContractBase.prototype._acceptContractInternal = function () {
+            this.customer.contract(this);
+            Game.availableContracts.remove(this);
+            Game.worldInfo.recruitCustomer(this.customer);
+            Game.customers.push(this.customer);
+            Game.messageLog.createAdd(this.customer.name + " joined the resort.");
+        };
         CustomerContractBase.prototype.acceptContract = function () {
-            
+            this._acceptContractInternal();
         };
         CustomerContractBase.prototype.completeContract = function () {
+            // Pay out
+            var contractPay = this.calculatePayoff() * this._calculateHappinessBonusRate();
+            Game.money(Game.money() + contractPay);
 
+            // Remove customer
+            for (var i = 0; i < Game.customers().length; i++) {
+                if (Game.customers()[i] != this.customer)
+                    continue;
+             
+                Game.customers.splice(i, 1);
+                break;
+            }
+
+            Game.messageLog.createAdd(this.customer.name + " left the resort.  Earned $" + contractPay.toFixed(2));
         };
         CustomerContractBase.prototype.tick = function () {
 
@@ -712,7 +775,7 @@ var Contracts = (function () {
     function DayLimitContract(customer, dayCount) {
         /// <param name="customer" type="Customer" />
         CustomerContractBase.call(this, customer);
-        
+
         if (!dayCount) {
             dayCount = this.dayCountWeights.random().value;
         }
@@ -740,6 +803,7 @@ var Contracts = (function () {
         };
         DayLimitContract.prototype.acceptContract = function () {
             this.ticksRemaining(this.dayCount * Game.settings.daySettings.totalTicksPerDay);
+            this._acceptContractInternal();
         };
         DayLimitContract.prototype._calculatePayoff = function (expandedTankSize) {
             var compoundBonus = 1;
@@ -810,7 +874,7 @@ var Contracts = (function () {
             var index = Random.nextInt(0, pop.length - 1);
             if (selectedCustomerIndexes.length > 0 && selectedCustomerIndexes.some(function (i) { return i == index; }))
                 continue;
-            
+
             // Add the customer index to the selected array, get the customer
             selectedCustomerIndexes.push(index);
             var customer = pop[index];
@@ -820,6 +884,11 @@ var Contracts = (function () {
             contracts.push(new contractType(customer))
         }
 
+        contracts = contracts.sort(function (a, b) {
+            // Sort by type name
+            return ArrayHelpers.compareProperties(a, b, ["typeName", "desiredSizeIncrease", "dayCount"]);
+        });
+
         return contracts;
     }
 
@@ -827,7 +896,7 @@ var Contracts = (function () {
         // "Namespace" members
         contractWeights: contractWeights,
         createNewContracts: createNewContracts,
-        
+
         // Contract Types
         CustomerContractBase: CustomerContractBase,
         DayLimitContract: DayLimitContract,
@@ -972,5 +1041,36 @@ var Drugs = (function () {
         Expandofirm: Expandofirm,
         drugList: drugList,
         _initializeDrugList: _initializeDrugList
+    };
+})();
+
+
+
+/////////////////////////////////
+//// Customer Name Generator ////
+/////////////////////////////////
+var CustomerNameGenerator = new (function NameGenerator() {
+    this.firstNames = [
+        "FirstName1",
+        "FirstName2",
+        "FirstName3",
+        "FirstName4",
+        "FirstName5",
+    ];
+
+    this.lastNames = [
+        "LastName1",
+        "LastName2",
+        "LastName3",
+        "LastName4",
+        "LastName5",
+    ];
+
+    this.pickFirstName = function () {
+        return this.firstNames.random();
+    };
+
+    this.pickLastName = function () {
+        return this.lastNames.random();
     };
 })();
