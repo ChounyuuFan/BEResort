@@ -325,13 +325,15 @@ var Game = (function () {
     };
     Game.prototype._tickDay = function () {
         this.currentDay(this.currentDay() + 1);
-        this.money(this.money() - this.totalDailyUpkeep());
         this.availableContracts(Contracts.createNewContracts(this.settings.contractLimit));
     };
     Game.prototype._tickInteral = function (isActiveTick) {
         this.currentTick(this.currentTick() + 1);
         for (var i = 0; i < this.customers().length; i++)
             this.customers()[i].tick(isActiveTick);
+
+        // Deduct daily expenses per tick (to avoid gaming the system!)
+        this.money(this.money() - this.totalDailyUpkeep() / this.settings.daySettings.totalTicksPerDay);
     };
 
     return new Game();
