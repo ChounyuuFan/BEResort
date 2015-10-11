@@ -332,8 +332,9 @@ var Game = (function () {
         for (var i = 0; i < this.customers().length; i++)
             this.customers()[i].tick(isActiveTick);
 
-        // Deduct daily expenses per tick (to avoid gaming the system!)
-        this.money(this.money() - this.totalDailyUpkeep() / this.settings.daySettings.totalTicksPerDay);
+        // Deduct daily expenses for each active tick
+        if(isActiveTick)
+            this.money(this.money() - this.totalDailyUpkeep() / this.settings.daySettings.activeTicksPerDay);
     };
 
     return new Game();
@@ -732,6 +733,7 @@ var Contracts = (function () {
         this.upfrontPay = 0;
         this.customer = customer;
         this.isComplete = false;
+        this.isAccepted = false;
     }
     (function () {
         CustomerContractBase.prototype.typeName = "BaseContract";
@@ -750,6 +752,10 @@ var Contracts = (function () {
             return 1 + (value / (2 * (100 - this.happinessBreakEvenPoint)));
         };
         CustomerContractBase.prototype._acceptContractInternal = function () {
+            if (this.isAccepted)
+                return;
+
+            this.isAccepted = true;
             this.customer.contract(this);
             Game.availableContracts.remove(this);
             Game.worldInfo.recruitCustomer(this.customer);
@@ -757,6 +763,9 @@ var Contracts = (function () {
             Game.messageLog.createAdd(this.customer.name + " joined the resort.");
         };
         CustomerContractBase.prototype.acceptContract = function () {
+            if (this.isAccepted)
+                return;
+
             this._acceptContractInternal();
         };
         CustomerContractBase.prototype.completeContract = function () {
@@ -816,6 +825,9 @@ var Contracts = (function () {
             }
         };
         DayLimitContract.prototype.acceptContract = function () {
+            if (this.isAccepted)
+                return;
+
             this.ticksRemaining(this.dayCount * Game.settings.daySettings.totalTicksPerDay);
             this._acceptContractInternal();
         };

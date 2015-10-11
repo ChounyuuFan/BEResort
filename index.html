@@ -83,9 +83,12 @@
     </div>
 
     <script type="text/html" id="customers-tab">
+        <div style="font-weight: bold; position: relative; top: -2.5em;">
+            <span data-bind="text: 'Customers: ' + Game.customers().length + ' / ' + Game.settings.customerLimit"></span>
+        </div>
         <div class="customers-list">
             <!-- ko foreach: $data.game.customers -->
-            <div class="customer-status" data-bind="attr: { id: 'customer-' + $index() }">
+            <div class="customer-status" style="position: relative; top: -1.5em;" data-bind="attr: { id: 'customer-' + $index() }">
                 <div class="left">
                     <div data-bind="text: $data.name"></div>
                     <table style="margin-right: 4em;" class="info-table left">
@@ -226,7 +229,7 @@
     </script>
 
     <script type="text/html" id="upgrades-tab">
-        <div class="upgrades-page-tab-container">
+        <div class="upgrades-page-tab-container" style="position: relative; top: -8em;">
             <!-- ko with: Game.resort.totalAmenitiesValue -->
             <table class="info-table" style="margin-bottom: 2em;">
                 <thead>
@@ -348,6 +351,7 @@
     </script>
 
     <script src="js/lib/bootstrap.min.js"></script>
+    <script src="js/lib/bootbox.js"></script>
     <script src="js/lib/bootstrap-slider.js"></script>
     <script type="text/javascript">
         var view = new GameView();

@@ -75,6 +75,7 @@
     <Content Include="css\styles.css" />
     <Content Include="fonts\glyphicons-halflings-regular.svg" />
     <Content Include="index.html" />
+    <Content Include="js\lib\bootbox.js" />
     <Content Include="js\lib\bootstrap-slider.js" />
     <Content Include="js\lib\bootstrap.js" />
     <Content Include="js\lib\bootstrap.min.js" />

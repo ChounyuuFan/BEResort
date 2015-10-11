@@ -1,4 +1,6 @@
 ﻿/// <reference path="~/js/game.js" />
+/// <reference path="~/js/lib/jQuery.js" />
+/// <reference path="~/js/lib/bootbox.js" />
 
 function GameView() {
     Game.initialize();
@@ -41,14 +43,20 @@ GameView.prototype.showUpgradesTab = function () {
 
 // Top Level
 GameView.prototype.tick = function () {
-    if (this.game.currentTick() == this.game.settings.daySettings.activeTicksPerDay) {
-        var result = confirm("Are you sure you want to end the day?");
+    if (this.game.currentTick() != this.game.settings.daySettings.activeTicksPerDay) {
+        this.game.tick();
+        this.refreshView();
+        return;
+    }
+  
+    var self = this;
+    var result = bootbox.confirm("Are you sure you want to end the day?", function(result) { 
         if (!result)
             return;
-    }
-        
-    this.game.tick();
-    this.refreshView();
+
+        self.game.tick();
+        self.refreshView();
+    });
 };
 GameView.prototype.refreshView = function () {
     
@@ -59,16 +67,17 @@ GameView.prototype.postRefreshView = function () {
 
 GameView.prototype.verifyAcceptContract = function (contract, eventData) {
     /// <param name="contract" type="Contracts.CustomerContractBase" />
-    if (Game.customers().length >= Game.settings.customerLimit) {
-        alert("You are at the customer limit.  Complete existing customer contracts first.");
-        return;
-    }
+    bootbox.confirm("Are you sure you want to accept this " + contract.typeName + " contract?", function (result) {
+        if (!result)
+            return;
 
-    var result = confirm("Are you sure you want to accept this " + contract.typeName + " contract?");
-    if (!result)
-        return;
+        if (Game.customers().length >= Game.settings.customerLimit) {
+            bootbox.alert("You are at the customer limit.  Complete existing customer contracts first.", function () { });
+            return;
+        }
 
-    contract.acceptContract();
+        contract.acceptContract();
+    });
 };
 
 // GUI stuff that really doesn't belong here
