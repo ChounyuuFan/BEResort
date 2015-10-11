@@ -1,5 +1,15 @@
-﻿/// <reference path="~/js/common.js" />
+﻿/// <reference path="~/js/lib/jquery.js" />
 /// <reference path="~/js/lib/ko.js" />
+/// <reference path="~/js/lib/common.js" />
+
+////////////////////////////////////
+// Constants & General Data Types //
+////////////////////////////////////
+function MessageInfo(message, type, priority) {
+    this.message = message ? message : "";
+    this.type = type ? type : "";
+    this.priority = priority ? priority : 0;
+}
 
 var MessageTypes = {
     "Info": 0,
@@ -16,19 +26,36 @@ var ResortRoomTypes = {
     "Nursing Room": 32,
     "All": 63
 };
+
 (function () {    
     function createReverseLookup(objectToPopulate) {
+        var valueList = [];
         for (var prop in objectToPopulate) {
-            if (objectToPopulate.hasOwnProperty(prop))
+            if (!objectToPopulate.hasOwnProperty(prop))
                 continue;
 
             objectToPopulate[objectToPopulate[prop]] = prop;
+            valueList.push(prop);
         }
+        objectToPopulate.valueList = valueList;
+    }
+
+    function isType(a, b) {
+        if ((typeof (a)).toLowerCase() != "number")
+            a = this[a];
+
+        if ((typeof (b)).toLowerCase() != "number")
+            b = this[b];
+
+        return !!(a & b);
     }
 
     // Create reverse lookups for easy use
     createReverseLookup(MessageTypes);
     createReverseLookup(ResortRoomTypes);
+
+    MessageTypes.isType = isType;
+    ResortRoomTypes.isType = isType;
 })();
 
 function AmenitiesValue(relax, athletic, pamper) {
@@ -72,8 +99,12 @@ ResortUpgradeBase.prototype.buy = function () {
     this.enabled(true);
 };
 
+
+///////////////////
+// Game & Resort //
+///////////////////
 function Resort() {
-    this.upgrades = ko.observableArray();    
+    this.upgrades = ko.observableArray();
     this._loadUpgrades();
 
     this.totalUpkeep = ko.observable();
@@ -96,7 +127,6 @@ function Resort() {
         this.totalUpkeep(upkeep);
         return sum;
     };
-
     Resort.prototype._loadUpgrades = function () {
         this.upgrades.splice(0);
 
@@ -120,38 +150,96 @@ function Resort() {
         beachBar.description("A full service beach side bar, complete with tiny umbrella drinks.");
         beachBar.amenityValue(new AmenitiesValue(2, 0, 3));
         this.upgrades.push(beachBar);
+
+        // Gym
+        var treadmills = new ResortUpgradeBase("Treadmills", 1000, 30, ResortRoomTypes.Gym);
+        treadmills.description("Treadmills for keeping that cardio up!");
+        treadmills.amenityValue(new AmenitiesValue(0, 2, 0));
+        this.upgrades.push(treadmills);
+
+        var weights = new ResortUpgradeBase("Weights", 500, 20, ResortRoomTypes.Gym);
+        weights.description("Free weights for toning and shaping.");
+        weights.amenityValue(new AmenitiesValue(0, 1, 0));
+        this.upgrades.push(weights);
+
+        var yoga = new ResortUpgradeBase("Yoga", 650, 35, ResortRoomTypes.Gym);
+        yoga.description("Yoga mats and instruction.");
+        yoga.amenityValue(new AmenitiesValue(1, 1, 0));
+        this.upgrades.push(yoga);
+
+        // Spa
+        var hotTub = new ResortUpgradeBase("Hot Tub", 1200, 35, ResortRoomTypes.Spa);
+        hotTub.description("Don't worry so much, just give the water a touch.");
+        hotTub.amenityValue(new AmenitiesValue(1, 0, 1));
+        this.upgrades.push(hotTub);
+
+        var sauna = new ResortUpgradeBase("Sauna", 2000, 75, ResortRoomTypes.Spa);
+        sauna.description("Hot and steamy.");
+        sauna.amenityValue(new AmenitiesValue(2, 0, 3));
+        this.upgrades.push(sauna);
+
+        var masseuse = new ResortUpgradeBase("Masseuse", 1000, 100, ResortRoomTypes.Spa);
+        masseuse.description("Nothing beats a good massage.");
+        masseuse.amenityValue(new AmenitiesValue(1, 0, 4));
+        this.upgrades.push(masseuse);
+
+        var pool = new ResortUpgradeBase("Indoor Pool", 5000, 50, ResortRoomTypes.Spa);
+        pool.description("An indoor temperature controlled pool.");
+        pool.amenityValue(new AmenitiesValue(2, 0, 2));
+        this.upgrades.push(pool);
+
+        // Lounge
+
     };
 
+    Resort.prototype.getUpgradesByRoom = function (resortRoomType) {
+        return $.grep(this.upgrades(), function (item, index) {
+            return ResortRoomTypes.isType(item.owningRoomType(), resortRoomType);
+        });
+    };
 })();
-
-function MessageInfo(message, type, priority) {
-    this.message = message ? message : "";
-    this.type = type ? type : "";
-    this.priority = priority ? priority : 0;
-}
 
 var Game = (function () {
 
     function Game() {
+        /// <field name="worldInfo" type="WorldInfo" />
+        /// <field name="resort" type="Resort" />
+        /// <field name="availableContracts" type="Array" elementType="Contracts.CustomerContractBase" />
+        
         this.settings = {
             daySettings: {
                 totalTicksPerDay: 24,
                 activeTicksPerDay: 16,
                 wakeHour: 8
             },
-            customerSettings: {
-
-            }
+            contractLimit: 10
         };
 
-        this.money = ko.observable(5000);
+        this.money = ko.observable(9500);
         this.chem = ko.observable(0);
         this.currentTick = ko.observable(0);
         this.currentDay = ko.observable(1);
         this.customers = ko.observableArray();
-        this.resort = new Resort();
+
+        // Computed Properties
+        this.customerUpkeep = ko.computed(function () {
+            return this.customers().length * 100;
+        }, this, { deferEvaluation: true });
+        this.totalDailyUpkeep = ko.computed(function () {
+            return this.customerUpkeep() + this.resort.totalUpkeep();
+        }, this, { deferEvaluation: true });
+        
+        this.availableContracts = ko.observableArray([]);
+        this.worldInfo = null;
+        this.resort = null;
     }
-    Game.prototype.initialize = function () {
+    Game.prototype.initialize = function () {        
+
+        // Initialize the world, resort, and contracts.  Contracts must be done after the world.
+        this.worldInfo = new WorldInfo();
+        this.resort = new Resort();
+        this.availableContracts(Contracts.createNewContracts(this.settings.contractLimit));
+
         this.customers.push(new Customer());
     };
 
@@ -192,39 +280,43 @@ var Game = (function () {
     Game.prototype.tick = function () {
         if (this.currentTick() >= this.settings.daySettings.activeTicksPerDay) {
             while (this.currentTick() < this.settings.daySettings.totalTicksPerDay)
-                this._tickInteral();
+                this._tickInteral(false);
 
             this.currentTick(0);
             this._tickDay();
         } else {
-            this._tickInteral();
+            this._tickInteral(true);
         }
     };
     Game.prototype._tickDay = function () {
         this.currentDay(this.currentDay() + 1);
-        this.money(this.money() - this.resort.totalUpkeep() - (this.customers().length * 100));
+        this.money(this.money() - this.totalDailyUpkeep());
+        this.availableContracts(Contracts.createNewContracts(this.settings.contractLimit));
     };
-    Game.prototype._tickInteral = function () {
+    Game.prototype._tickInteral = function (isActiveTick) {
         this.currentTick(this.currentTick() + 1);
         for (var i = 0; i < this.customers().length; i++)
-            this.customers()[i].tick();
+            this.customers()[i].tick(isActiveTick);
     };
 
     return new Game();
 })();
 
+
+//////////////
+// Customer //
+//////////////
 function Customer(game) {
     this.game = game;
 
     // Tank Size
     this.baseTankSize = ko.observable(100);
     this.expandedTankSize = ko.observable(0);
-    this.maxExpandedTankSize = ko.observable(50);
 
     // Fill Rate
     this.baseFillRate = ko.observable(0);
     this.expandedFillRate = ko.observable(0);
-    this.maxExpandedFillRate = ko.observable(20);
+    this.maxExpandedFillRate = ko.observable(20000);
 
     // Potential
     this.basePotential = ko.observable(1);
@@ -239,7 +331,7 @@ function Customer(game) {
     this.baseTankStretch = ko.observable(1.1);
     this.expandedTankStretch = ko.observable(0);
     this.maxExpandedTankStretch = ko.observable(0);
-    
+
     // Happiness
     this.happiness = ko.observable(20);
     this.maxHappiness = ko.observable(100);
@@ -256,6 +348,18 @@ function Customer(game) {
     // KO Computeds
     this.potential = ko.computed(function () {
         return this.basePotential() + this.expandedPotential();
+    }, this);
+    this.maxExpandedTankSize = ko.computed(function () {
+        var value = this.potential() / 100 * this.baseTankSize();
+
+        // If potential bonus is less than 50, average it with 50 to pull it closer to
+        // a reasonable minimum that still has some reasonable scaling between low and 
+        // high end values without ever penalizing the player. Add more 50s to flatten 
+        // out the curve, add more potentialBonus to make a steeper curve.
+        if (value < 50)
+            value = Math.avg(50, 50, value);
+
+        return value;
     }, this);
     this.tankStretch = ko.computed(function () {
         return this.baseTankStretch() + this.expandedTankStretch();
@@ -285,11 +389,11 @@ function Customer(game) {
         Amenities: {
             relaxLow: ["I wish there was a place to relax around here.", "Sigh... there's nowhere to relax."],
             relaxHigh: ["At least a girl can relax around here!"],
-            
+
             athleticLow: ["Isn't there some place around here I can burn some energy?", "Can't get a good workout here!"],
             athleticHigh: ["Feel the burn!"],
 
-            pamperLow: ["I'm on a beach resort vacation!  Where's the service?",  "Subpar service here. Hmph!"],
+            pamperLow: ["I'm on a beach resort vacation!  Where's the service?", "Subpar service here. Hmph!"],
             pamperHigh: ["Fantastic resort here, darling!"]
         }
     };
@@ -337,7 +441,7 @@ function Customer(game) {
 
         return drug[0];
     };
-    Customer.prototype.tick = function () {
+    Customer.prototype.tick = function (isActiveTick) {
         this.currentTickMessage(null);
 
         this._tickTankFillStart();
@@ -347,7 +451,8 @@ function Customer(game) {
         this._tickTankFillEnd();
         this._tickFillRateGain();
 
-        this._tickAmenities();
+        if(isActiveTick)
+            this._tickAmenities();
     };
     Customer.prototype._tickFillRateGain = function () {
         if (this.tankAmount() <= this.tankSize()) {
@@ -493,6 +598,247 @@ function Customer(game) {
     };
 })();
 
+
+////////////////////////////
+// World Info & Contracts //
+////////////////////////////
+function WorldInfo() {
+    this.generation = ko.observable();
+    this.existingCustomerPopulation = ko.observableArray();
+    this.newCustomerPopulation = ko.observableArray();
+    this.population = ko.observableArray();
+    this.sampleSize = 10000;
+
+    // Population Generation Levers
+    this.initialTankSizeVariance = 0.15;
+    this.initialTankSizeVariancePotentialInfluenceScale = 100;
+    this.initialBasePotential = 1.5;
+    this.initialMaxPotential = 5;
+    this.potentialVariance = 0.5;
+
+    this.initialTankSizeTable = new WeightedRandomItemPicker([
+        new WeightedRandomItem(90, 1),
+        new WeightedRandomItem(100, 6),
+        new WeightedRandomItem(140, 2),
+        new WeightedRandomItem(180, 1),
+    ]);
+
+    var self = this;
+    Debug.TimeFunction(function () {
+        self.createInitialPopulation();
+    });
+}
+(function () {
+    WorldInfo.prototype.recruitCustomer = function (customer) {
+        var popIndex = 0;
+        for (; popIndex < this.population().length; popIndex++) {
+            if (this.population()[i] == customer)
+                break;
+        }
+
+        this.population.splice(popIndex, 1);
+        this.existingCustomerPopulation.push(customer);
+    };
+    WorldInfo.prototype.createInitialPopulation = function () {
+        // Create the population
+        var popArray = [];
+        for (var i = 0; i < this.sampleSize; i++) {
+            var customer = new Customer();
+
+            var potentialBonus = this.initialBasePotential * Random.nextFloat(0, this.potentialVariance);
+            customer.basePotential(this.initialBasePotential + potentialBonus);
+            customer.maxExpandedPotential(this.initialMaxPotential * Random.nextFloat(0, this.potentialVariance));
+
+            var variancePotentialBonus = customer.potential() / this.initialTankSizeVariancePotentialInfluenceScale;
+            var tankSize = this.initialTankSizeTable.random().value;
+            var tankBonus = Random.nextFloat(-this.initialTankSizeVariance + variancePotentialBonus, this.initialTankSizeVariance + variancePotentialBonus) * tankSize;
+            customer.baseTankSize(tankSize + tankBonus);
+
+            popArray.push(customer);
+        }
+
+        // Empty arrays and replace their underlying observable value with a shallow copy
+        this.population.splice(0);
+        this.population(popArray.slice(0));
+
+        this.newCustomerPopulation.splice(0);
+        this.newCustomerPopulation(popArray.slice(0));
+    };
+
+    // ------------------------------
+    // Simple Data Analysis functions
+    // ------------------------------
+    // These exist only to provide us with the ability to discover what changes to 
+    // world and population generation have done.  They should never be called
+    // during normal gameplay.
+    WorldInfo.prototype._calculateAverageTankSize = function () {
+        var sum = 0;
+        for (var i = 0; i < this.population().length; i++)
+            sum += this.population()[i].tankSize();
+        return sum / this.population().length;
+    };
+    WorldInfo.prototype._getSizeSpread = function () {
+        return ArrayHelpers.createDictionaryArray(this.population(), function (item) {
+            return item.getBraSize();
+        });
+    };
+})();
+
+var Contracts = (function () {
+    function CustomerContractBase(customer) {
+        this.upfrontPay = 0;
+        this.customer = customer;
+        this.isComplete = false;
+        this.typeName = "";
+    }
+    (function () {
+        CustomerContractBase.prototype.acceptContract = function () {
+            
+        };
+        CustomerContractBase.prototype.completeContract = function () {
+
+        };
+        CustomerContractBase.prototype.tick = function () {
+
+        };
+        CustomerContractBase.prototype.tickNextDay = function () {
+
+        };
+        CustomerContractBase.prototype.calculatePayoff = function () {
+            return 0;
+        };
+    })();
+
+    function DayLimitContract(customer, dayCount) {
+        /// <param name="customer" type="Customer" />
+        CustomerContractBase.call(this, customer);
+        
+        if (!dayCount) {
+            dayCount = this.dayCountWeights.random().value;
+        }
+
+        this.dayCount = dayCount;
+        this.ticksRemaining = ko.observable(0);
+    }
+    (function () {
+        $.extend(DayLimitContract.prototype, CustomerContractBase.prototype);
+        DayLimitContract.prototype.typeName = "Day Limit";
+        DayLimitContract.prototype.moneyPerMillimeterGrowth = 18;
+        DayLimitContract.prototype.moneyPerMillimeterGrowthCompoundSize = 10;
+        DayLimitContract.prototype.moneyPerMillimeterGrowthCompoundRate = 0.33;
+        DayLimitContract.prototype.dayCountWeights = new WeightedRandomItemPicker([
+            new WeightedRandomItem(3, 6),
+            new WeightedRandomItem(5, 2),
+            new WeightedRandomItem(7, 1)
+        ]);
+
+        DayLimitContract.prototype.tick = function () {
+            this.ticksRemaining(this.ticksRemaining() - 1);
+            if (this.ticksRemaining() == 0) {
+                this.completeContract();
+            }
+        };
+        DayLimitContract.prototype.acceptContract = function () {
+            this.ticksRemaining(this.dayCount * Game.settings.daySettings.totalTicksPerDay);
+        };
+        DayLimitContract.prototype._calculatePayoff = function (expandedTankSize) {
+            var compoundBonus = 1;
+            if (expandedTankSize > this.moneyPerMillimeterGrowthCompoundSize) {
+                compoundBonus = (1 + this.moneyPerMillimeterGrowthCompoundRate) ^ (expandedTankSize / this.moneyPerMillimeterGrowthCompoundSize);
+            }
+            return compoundBonus * this.moneyPerMillimeterGrowth * expandedTankSize;
+        };
+        DayLimitContract.prototype.calculateExpectedPayoff = function () {
+            return this._calculatePayoff(this.customer.maxExpandedTankSize() * 0.8);
+        };
+        DayLimitContract.prototype.calculatePayoff = function () {
+            return this._calculatePayoff(this.customer.expandedTankSize());
+        };
+    })();
+
+    function SizeLimitContract(customer, desiredSizeIncrease) {
+        /// <param name="customer" type="Customer" />
+        CustomerContractBase.call(this, customer);
+
+        if (!desiredSizeIncrease) {
+            desiredSizeIncrease = Random.nextFloat(0.75, 0.95) * customer.maxExpandedTankSize();
+        }
+
+        this.desiredSizeIncrease = desiredSizeIncrease;
+        this.totalTargetSize = this.customer.tankSize() + desiredSizeIncrease;
+    }
+    (function () {
+        $.extend(SizeLimitContract.prototype, CustomerContractBase.prototype);
+        SizeLimitContract.prototype.typeName = "Size Limit";
+        SizeLimitContract.prototype.moneyPerMillimeterGrowth = 13;
+        SizeLimitContract.prototype.moneyPerMillimeterGrowthCompoundSize = 10;
+        SizeLimitContract.prototype.moneyPerMillimeterGrowthCompoundRate = 0.2;
+
+        SizeLimitContract.prototype.tick = function () {
+            if (this.customer.tankSize() >= this.totalTargetSize)
+                this.completeContract();
+        };
+        SizeLimitContract.prototype._calculatePayoff = function (expandedTankSize) {
+            var compoundBonus = 1;
+            if (expandedTankSize > this.moneyPerMillimeterGrowthCompoundSize) {
+                compoundBonus = (1 + this.moneyPerMillimeterGrowthCompoundRate) ^ (expandedTankSize / this.moneyPerMillimeterGrowthCompoundSize);
+            }
+            return compoundBonus * this.moneyPerMillimeterGrowth * expandedTankSize;
+        };
+        SizeLimitContract.prototype.calculateExpectedPayoff = function () {
+            return this._calculatePayoff(this.desiredSizeIncrease);
+        };
+        SizeLimitContract.prototype.calculatePayoff = function () {
+            return this._calculatePayoff(this.customer.expandedTankSize());
+        };
+    })();
+
+    var contractWeights = new WeightedRandomItemPicker([
+        new WeightedRandomItem(SizeLimitContract, 4),
+        new WeightedRandomItem(DayLimitContract, 1)
+    ]);
+
+    function createNewContracts(contractCount) {
+        var pop = Game.worldInfo.newCustomerPopulation();
+        if (contractCount > pop.length)
+            throw "More contracts requested than people available.  Did we REALLY run out of customers?";
+
+        var contracts = [];
+        var selectedCustomerIndexes = [];
+        while (contracts.length < contractCount) {
+            // Get a customer index, verify it hasn't been selected already.
+            var index = Random.nextInt(0, pop.length - 1);
+            if (selectedCustomerIndexes.length > 0 && selectedCustomerIndexes.some(function (i) { return i == index; }))
+                continue;
+            
+            // Add the customer index to the selected array, get the customer
+            selectedCustomerIndexes.push(index);
+            var customer = pop[index];
+
+            // Get the contract type function, create the contract with the customer
+            var contractType = contractWeights.random().value;
+            contracts.push(new contractType(customer))
+        }
+
+        return contracts;
+    }
+
+    return {
+        // "Namespace" members
+        contractWeights: contractWeights,
+        createNewContracts: createNewContracts,
+        
+        // Contract Types
+        CustomerContractBase: CustomerContractBase,
+        DayLimitContract: DayLimitContract,
+        SizeLimitContract: SizeLimitContract
+    };
+})();
+
+
+////////////////////
+// Milker & Drugs //
+////////////////////
 function Milker() {
     this.minMilkRate = ko.observable(1);
     this.maxMilkRate = ko.observable(100);
@@ -566,11 +912,40 @@ var Drugs = (function () {
         customer.modExpandedFillRate(effectivePower * this.fillRateGrowthPerDay / Game.settings.daySettings.totalTicksPerDay * Random.nextFloat(0.8, 1));
     };
 
+    function TestDrug() {
+        this._base.call(this);
+
+        this.name = "Test Drug";
+        this.costMoney(0);
+        this.costChem(0);
+        this.costTolerance(40);
+        this.ticksPerDose(Game.settings.daySettings.totalTicksPerDay * 10);
+        this.maxDurationTicks(Game.settings.daySettings.totalTicksPerDay * 20);
+        this.description = "Provides a ton of breast expansion and lactation for testing limits.";
+
+        this.tankGrowthPerDay = 500;
+        this.fillRateGrowthPerDay = 100;
+
+        this.durationTicks(this.ticksPerDose());
+    }
+    TestDrug.prototype._base = DrugBase;
+    $.extend(TestDrug.prototype, DrugBase.prototype);
+    TestDrug.prototype.tickEffect = function (customer) {
+        /// <param name="customer" type="Customer" />
+        var effectivePower = this.calculatePower();
+        customer.modExpandedTankSize(effectivePower * this.tankGrowthPerDay / Game.settings.daySettings.totalTicksPerDay * Random.nextFloat(0.8, 1));
+        customer.modExpandedFillRate(effectivePower * this.fillRateGrowthPerDay / Game.settings.daySettings.totalTicksPerDay * Random.nextFloat(0.8, 1));
+    };
+
     var drugList = [];
     function _initializeDrugList() {
         drugList.push({
             effect: new Expandofirm(),
             function: Expandofirm
+        });
+        drugList.push({
+            effect: new TestDrug(),
+            function: TestDrug
         });
     }
 
@@ -597,33 +972,5 @@ var Drugs = (function () {
         Expandofirm: Expandofirm,
         drugList: drugList,
         _initializeDrugList: _initializeDrugList
-    };
-})();
-
-var Contracts = (function () {
-
-    function CustomerContractBase(customer) {
-        this.upfrontPay = 0;
-        this.customer = customer;
-        this.isComplete = false;
-        this.typeName = "";
-    }
-    (function () {
-        CustomerContractBase.prototype.tick = function () {
-
-        };
-        CustomerContractBase.prototype.tickNextDay = function () {
-
-        };
-        CustomerContractBase.prototype.calculateCompletionBonus = function () {
-            return 0;
-        };
-        CustomerContractBase.prototype.calculateReputationBonus = function (reputation) {
-            return this.upfrontPay * (reputation / 1000);
-        };
-    })();
-
-    return {
-        CustomerContractBase: CustomerContractBase
     };
 })();

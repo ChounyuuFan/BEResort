@@ -1,4 +1,6 @@
-﻿function GameView() {
+﻿/// <reference path="~/js/game.js" />
+
+function GameView() {
     Game.initialize();
     Drugs._initializeDrugList();
 
@@ -40,6 +42,12 @@ GameView.prototype.showUpgradesTab = function () {
 
 // Top Level
 GameView.prototype.tick = function () {
+    if (this.game.currentTick() == this.game.settings.daySettings.activeTicksPerDay) {
+        var result = confirm("Are you sure you want to end the day?");
+        if (!result)
+            return;
+    }
+        
     this.game.tick();
     this.refreshView();
 };
@@ -48,4 +56,8 @@ GameView.prototype.refreshView = function () {
 };
 GameView.prototype.postRefreshView = function () {
 
+};
+
+GameView.prototype.expanderClick = function (i, e) {
+    $(e.target).parents('.expander-title').siblings('.expander-content').toggle();
 };

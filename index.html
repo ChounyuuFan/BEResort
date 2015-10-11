@@ -41,8 +41,8 @@
                 <span data-bind="text: $data.chem().toFixed(2) + 'ml'"></span>
             </li>
             <li>
-                <label>Upkeep:</label>
-                <span data-bind="text: '$' + $data.resort.totalUpkeep()"></span>
+                <label>Daily Upkeep:</label>
+                <span data-bind="text: '$' + $data.totalDailyUpkeep()"></span>
             </li>
         </ul>
         <ul class="resort-status">
@@ -209,34 +209,62 @@
                 </tbody>
             </table>
             <!-- /ko -->
-
-            <!-- ko foreach: Game.resort.upgrades -->
-            <div class="expander-container">
-                <div class="expander-title">
-                    <div class="left" data-bind="click: function(i, e) { $(e.target).parents('.expander-title').siblings('.expander-content').toggle(); }">
-                        <ul>
-                            <li style="width: 12em; font-weight: bold;" data-bind="text: $data.name"></li>                            
-                        </ul>
+            <!-- ko foreach: ResortRoomTypes.valueList -->
+            <div>
+                <!-- ko if: $data != "All" -->
+                <!-- ko with: Game.resort.getUpgradesByRoom($data) -->
+                <!-- ko if: $data.length > 0 -->
+                <h2 data-bind="text: $parent"></h2>
+                <!-- ko foreach: $data -->
+                <div class="expander-container">
+                    <div class="expander-title">
+                        <div class="left" data-bind="click: $root.expanderClick">
+                            <ul>
+                                <li style="width: 12em; font-weight: bold;" data-bind="text: $data.name"></li>
+                            </ul>
+                        </div>
+                        <div class="right">
+                            <ul>
+                                <li data-bind="text: 'Upkeep: $'  + $data.upkeep()"></li>
+                                <!-- ko if: $data.purchased() -->
+                                <li><div style="margin-left: 0.5em;" class="small-square" data-bind="css: { green: $data.enabled(), red: !$data.enabled() }"></div></li>
+                                <li><input style="width: 5em;" type="button" value="Buy" data-bind="attr: { value: $data.enabled() ? 'Disable' : 'Enable' }, click: function() { $data.enabled(!$data.enabled()); }" /></li>
+                                <!-- /ko -->
+                                <!-- ko if: !$data.purchased() -->
+                                <li style="width: 6em;" data-bind="text: '$' + $data.price()"></li>
+                                <li><input type="button" value="Buy" data-bind="attr: { disabled: $root.canBuyUpgrade($data) ? null : 'disabled' }, click: function() { if(!$root.canBuyUpgrade($data)) { return; } $data.buy(); }" /></li>
+                                <!-- /ko -->
+                            </ul>
+                        </div>
+                        <div class="clear"></div>
                     </div>
-                    <div class="right">
-                        <ul>
-                            <li data-bind="text: 'Upkeep: $'  + $data.upkeep()"></li>
-                            <!-- ko if: $data.purchased() -->
-                            <li><div style="margin-left: 0.5em;" class="small-square" data-bind="css: { green: $data.enabled(), red: !$data.enabled() }"></div></li>
-                            <li><input style="width: 5em;" type="button" value="Buy" data-bind="attr: { value: $data.enabled() ? 'Disable' : 'Enable' }, click: function() { $data.enabled(!$data.enabled()); }" /></li>
-                            <!-- /ko -->
-                            <!-- ko if: !$data.purchased() -->
-                            <li style="width: 6em;" data-bind="text: '$' + $data.price()"></li>
-                            <li><input type="button" value="Buy" data-bind="attr: { disabled: $root.canBuyUpgrade($data) ? null : 'disabled' }, click: function() { if(!$root.canBuyUpgrade($data)) { return; } $data.buy(); }" /></li>
-                            <!-- /ko -->
-                        </ul>
+                    <div class="expander-content">
+                        <div class="upgrade-description" data-bind="text: $data.description">
+                        </div>
+                        <!-- ko with: $data.amenityValue -->
+                        <table class="info-table" style="margin-bottom: 2em;">
+                            <tbody>
+                                <tr>
+                                    <td>Relaxation:</td>
+                                    <td data-bind="text: $data.relax"></td>
+                                </tr>
+                                <tr>
+                                    <td>Athletic:</td>
+                                    <td data-bind="text: $data.athletic"></td>
+                                </tr>
+                                <tr>
+                                    <td>Pamper:</td>
+                                    <td data-bind="text: $data.pamper"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <!-- /ko -->
                     </div>
-                    <div class="clear"></div>
                 </div>
-                <div class="expander-content">
-                    <div class="upgrade-description" data-bind="text: $data.description">
-                    </div>
-                </div>
+                <!--/ko-->
+                <!--/ko-->
+                <!--/ko-->
+                <!--/ko-->
             </div>
             <!-- /ko -->
         </div>
