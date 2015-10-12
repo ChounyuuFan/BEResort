@@ -442,6 +442,10 @@ function Customer() {
     };
 
     Customer.prototype.modHappiness = function (mod) {
+        // Absolutely no happiness gains allowed if overcapacity (thanks for the idea, Miss_Buxom!)
+        if (mod > 0 && this.tankAmount() > this.tankSize())
+            return;
+
         // Clamp happines
         this.happiness(Math.clamp(this.happiness() + mod, 0, this.maxHappiness()));
     };
@@ -523,19 +527,18 @@ function Customer() {
     };
     Customer.prototype._tickTankFillEnd = function () {
         var totalHappinessChange = 0;
-        if (this.tankAmount() > this.tankMax()) {
-            // Lose 1 point of happiness for each 1% above tankMax
-            var overLimitAmount = this.tankAmount() - this.tankMax();
-            totalHappinessChange -= (overLimitAmount / this.tankMax()) * 100
 
-            // Reset to tankAmount to tankMax
+        if (this.tankAmount() > this.tankMax()) {
+            // Double happiness penalty for going over absolute maximum
+            totalHappinessChange -= 3;
             this.tankAmount(this.tankMax());
         }
 
         if (this.tankAmount() > this.tankSize()) {
-            // Lose 1 point of happiness for each 2.5% above tankSize
+            // Lose up to 1.5 points of happiness, scaled by amount over limit
             var overLimitAmount = this.tankAmount() - this.tankSize();
-            totalHappinessChange -= (overLimitAmount / this.tankSize()) * 40;
+            var overcapacityRange = this.tankMax() - this.tankSize();
+            totalHappinessChange -= (overLimitAmount / overcapacityRange) * 1.5;
         }
 
         this.modHappiness(totalHappinessChange);
@@ -944,6 +947,9 @@ function Milker() {
     this.chemRate = ko.observable(0.025);
 }
 (function () {
+    Milker.prototype.milkingAmountPerHappinessPoint = 100;
+    Milker.prototype.milkingCompoundHappinessBonus = 1.1;
+    Milker.prototype.milkingCompoundHappinessBonusInterval = 10;
     Milker.prototype.modMilkRate = function (mod) {
         this.milkRate(Math.clamp(this.milkRate() + mod, this.minMilkRate(), this.maxMilkRate()));
     };
@@ -953,7 +959,10 @@ function Milker() {
     Milker.prototype.milk = function (customer) {
         var milkDrained = this.milkRate() <= customer.tankAmount() ? this.milkRate() : customer.tankAmount();
         customer.tankAmount(customer.tankAmount() - milkDrained);
-        customer.modHappiness(milkDrained / 100);
+
+        var flatHappinessGained = milkDrained / this.milkingAmountPerHappinessPoint;
+        var compoundHappinessBonus = this.milkingCompoundHappinessBonus ^ (milkDrained / this.milkingCompoundHappinessBonusInterval);
+        customer.modHappiness(flatHappinessGained * compoundHappinessBonus);
 
         Game.chem(Game.chem() + this.chemRate() * milkDrained);
     };
