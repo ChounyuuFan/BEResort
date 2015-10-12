@@ -740,6 +740,8 @@ var Contracts = (function () {
         this.customer = customer;
         this.isComplete = false;
         this.isAccepted = false;
+        this.joinDate = null;
+        this.joinSizes = null;
     }
     (function () {
         CustomerContractBase.prototype.typeName = "BaseContract";
@@ -767,6 +769,25 @@ var Contracts = (function () {
             Game.worldInfo.recruitCustomer(this.customer);
             Game.customers.push(this.customer);
             Game.messageLog.createAdd(this.customer.name + " joined the resort.");
+
+            // "Cosmetic" information for post-contract reporting
+            this.joinDate = {
+                day: Game.currentDay(),
+                tick: Game.currentTick()
+            };
+
+            this.joinSizes = {
+                tankSize: this.customer.tankSize(),
+                fillRate: this.customer.fillRate(),
+                measurements: {
+                    band: this.customer.measurements.band,
+                    hips: this.customer.measurements.hips,
+                    waist: this.customer.measurements.waist
+                }
+            };
+        };
+        CustomerContractBase.prototype._tickInternal = function () {
+
         };
         CustomerContractBase.prototype.acceptContract = function () {
             if (this.isAccepted)
@@ -791,7 +812,7 @@ var Contracts = (function () {
             Game.messageLog.createAdd(this.customer.name + " left the resort.  Earned $" + contractPay.toFixed(2));
         };
         CustomerContractBase.prototype.tick = function () {
-
+            this._tickInternal();
         };
         CustomerContractBase.prototype.tickNextDay = function () {
 
@@ -825,6 +846,8 @@ var Contracts = (function () {
         ]);
 
         DayLimitContract.prototype.tick = function () {
+            this._tickInternal();
+
             this.ticksRemaining(this.ticksRemaining() - 1);
             if (this.ticksRemaining() == 0) {
                 this.completeContract();
@@ -871,6 +894,7 @@ var Contracts = (function () {
         SizeLimitContract.prototype.moneyPerMillimeterGrowthCompoundRate = 0.2;
 
         SizeLimitContract.prototype.tick = function () {
+            this._tickInternal();
             if (this.customer.tankSize() >= this.totalTargetSize)
                 this.completeContract();
         };

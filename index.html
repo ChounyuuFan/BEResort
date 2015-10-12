@@ -82,7 +82,7 @@
         </div>
     </div>
 
-    <script type="text/html" id="customers-tab">        
+    <script type="text/html" id="customers-tab">
         <div style="font-weight: bold; position: relative; top: -2.5em;">
             <span data-bind="text: 'Customers: ' + Game.customers().length + ' / ' + Game.settings.customerLimit"></span>
         </div>
@@ -91,6 +91,35 @@
             <div class="customer-status" style="position: relative; top: -1.5em;" data-bind="attr: { id: 'customer-' + $index() }">
                 <div class="left">
                     <div data-bind="text: $data.name"></div>
+                    <ul class="inline-list">
+                        <li>
+                            <label>Milk:</label>
+                            <!-- ko template: { name: "control-progress-bar", data: { width: "16em", value: tankAmount(), maxValue: tankSize(), text: tankAmount().toFixed(1) + 'ml / ' + tankSize().toFixed(0) + 'ml (' + tankMax().toFixed(1) + 'ml)' } }--><!-- /ko -->
+                        </li>
+                        <li>
+                            <label>Milk Rate:</label>
+                            <!-- ko template: { name: "control-progress-bar", data: { width: "16em", value: fillRate(), maxValue: maxFillRate(), text: fillRate().toFixed(1) + 'ml / ' + maxFillRate().toFixed(1) + 'ml' } }--><!-- /ko -->
+                        </li>
+                        <li>
+                            <label>Happiness:</label>
+                            <!-- ko template: { name: "control-progress-bar", data: { width: "16em", value: happiness(), maxValue: maxHappiness(), text: happiness().toFixed(1) + ' / ' + maxHappiness().toFixed(1) } }--><!-- /ko -->
+                        </li>
+                        <li>
+                            <label>Tolerance:</label>
+                            <!-- ko template: { name: "control-progress-bar", data: { width: "16em", value: tolerance(), maxValue: maxTolerance(), text: tolerance().toFixed(1) + ' / ' + maxTolerance().toFixed(1) } }--><!-- /ko -->
+                        </li>
+                        <li>
+                            <!-- ko if: $data.contract().ticksRemaining -->
+                            <label>Remaining Time:</label>
+                            <span data-bind="text: Game.getFormattedTimestamp($data.contract().ticksRemaining())"></span>
+                            <!-- /ko -->
+                            <!-- ko if: $data.contract().totalTargetSize -->
+                            <label>Target Size:</label>
+                            <span data-bind="text: $data.contract().totalTargetSize.toFixed(2) + 'ml'"></span>
+                            <!-- /ko -->
+                        </li>
+                    </ul>
+                    <!-- ko if: false -->
                     <table style="margin-right: 4em;" class="info-table left">
                         <tbody>
                             <tr>
@@ -141,6 +170,7 @@
                             </tr>
                         </tbody>
                     </table>
+                    <!-- /ko -->
                     <div class="clear"></div>
                 </div>
                 <div class="right" style="text-align: right;">
@@ -158,13 +188,13 @@
                 <div class="clear"></div>
 
                 <div class="left" style="margin-top: 0.5em;">
-                        <label>Message:</label>
-                        <!-- ko if: $data.currentTickMessage() -->
-                        <span data-bind="text: '&quot;' + $data.currentTickMessage().message + '&quot;'"></span>
-                        <!-- /ko -->
-                        <!-- ko if: !$data.currentTickMessage() -->
-                        <span></span>
-                        <!-- /ko -->
+                    <label>Message:</label>
+                    <!-- ko if: $data.currentTickMessage() -->
+                    <span data-bind="text: '&quot;' + $data.currentTickMessage().message + '&quot;'"></span>
+                    <!-- /ko -->
+                    <!-- ko if: !$data.currentTickMessage() -->
+                    <span></span>
+                    <!-- /ko -->
                 </div>
 
                 <input type="button" class="right" value="Drugs" data-bind="click: function() { $('#customer-' + $index() + ' .drug-panel').slideToggle(); }" />
@@ -359,7 +389,7 @@
     </script>
 
     <script id="control-progress-bar" type="text/html">
-        <div style="position: relative;">
+        <div style="position: relative; display: inline-block;">
             <div style="text-align: center; width: 16em; color: black; text-shadow: 1px 1px 1px #FFF; font-weight: bold;" data-bind="style: { width: $data.width }">
                 <div>
                     <span style="font-size: 0.8em;" data-bind="text: $data.text"></span>
